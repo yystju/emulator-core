@@ -1,0 +1,41 @@
+{
+  "name" : "test0",
+  "line" : {
+    "code" : "LINE0",
+    "takt" : 100,
+    "rogm" : 1.0
+  },
+  "pbs" : {
+    "cap" : 3,
+    "avg" : 2
+  },
+  "coating" : [ {
+    "vin" : "VIN0",
+    "seq" : 0
+  }, {
+    "vin" : "VIN1",
+    "seq" : 1
+  }, {
+    "vin" : "VIN2",
+    "seq" : 2
+  }, {
+    "vin" : "VIN3",
+    "seq" : 3
+  }, {
+    "vin" : "VIN4",
+    "seq" : 4
+  } ],
+  "assembly" : [ {
+    "vin" : "VIN0",
+    "seq" : 0,
+    "status" : "0"
+  }, {
+    "vin" : "VIN1",
+    "seq" : 1,
+    "status" : "0"
+  }, {
+    "vin" : "VIN2",
+    "seq" : 2,
+    "status" : "0"
+  } ]
+}
