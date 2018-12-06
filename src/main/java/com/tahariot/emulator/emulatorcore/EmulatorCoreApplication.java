@@ -303,11 +303,17 @@ public class EmulatorCoreApplication implements ApplicationRunner {
                     logger.info("--------------------------------------------------------------------------------");
                     logger.info("PARAMETERS :: noshuffle({}), shuffleRatio({}), maxtakt({}), coatTakt({}), assemblyTakt({}), avg({}), cap({}), windowWidth({})", noshuffle, shuffleRatio, maxtakt, coatTakt, assemblyTakt, avg, cap, windowWidth);
 
-                    logger.info("  pbsQueue residuals : {}", pbsQueue);
-                    logger.info("  coatingOfflinePlan : {}", coatingOfflinePlan);
-                    logger.info("coatingOfflineActual : {}", result.data());
-                    logger.info("  assemblyOnlinePlan : {}", assemblyOnlinePlan);
-                    logger.info("assemblyOnlineActual : {}", assemblyOnlineActual);
+                    logger.info("  Length of pbsQueue residuals : {}", pbsQueue.size());
+                    logger.info("  Length of coatingOfflinePlan : {}", coatingOfflinePlan.size());
+                    logger.info("Length of coatingOfflineActual : {}", result.data().size());
+                    logger.info("  Length of assemblyOnlinePlan : {}", assemblyOnlinePlan.size());
+                    logger.info("Length of assemblyOnlineActual : {}", assemblyOnlineActual.size());
+
+                    logger.debug("  pbsQueue residuals : {}", pbsQueue);
+                    logger.debug("  coatingOfflinePlan : {}", coatingOfflinePlan);
+                    logger.debug("coatingOfflineActual : {}", result.data());
+                    logger.debug("  assemblyOnlinePlan : {}", assemblyOnlinePlan);
+                    logger.debug("assemblyOnlineActual : {}", assemblyOnlineActual);
 
                     int coatingLen = Math.min(coatingOfflinePlan.size(), result.data().size());
                     int assemblyLen = Math.min(assemblyOnlinePlan.size(), assemblyOnlineActual.size());
