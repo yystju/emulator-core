@@ -1,11 +1,14 @@
 package com.tahariot.emulator.emulatorcore.rasterizers;
 
 import com.tahariot.emulator.emulatorcore.api.Rasterizer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class EvenPossibilityShuffler<T> extends AbstractShuffler<T> {
+    private static Logger logger = LoggerFactory.getLogger(EvenPossibilityShuffler.class);
     private long window;
 
     public EvenPossibilityShuffler(Rasterizer<T> inner) {
@@ -38,6 +41,8 @@ public class EvenPossibilityShuffler<T> extends AbstractShuffler<T> {
                 ret.add(orig.remove(idx));
             }
         }
+
+        logger.debug("[EvenPossibilityShuffler] ret : {}", ret);
 
         return ret;
     }

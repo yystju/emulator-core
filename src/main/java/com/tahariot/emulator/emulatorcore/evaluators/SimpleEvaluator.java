@@ -2,31 +2,34 @@ package com.tahariot.emulator.emulatorcore.evaluators;
 
 import com.tahariot.emulator.emulatorcore.utils.CommonUtil;
 
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.List;
+
 public class SimpleEvaluator {
-    public double[] evaluate(double[] diff) {
-        double variance = CommonUtil.variance(diff);
+    public List<String> names() {
+        return Arrays.asList("vc.equal.norm2", "vin.offset.vairance", "vin.offset.min", "vin.offset.max", "seq.continuity.norm2");
+    }
+    public <T> double[] evaluate(List<T> v1, List<T> v2, Comparator<T> comparator, Comparator<T> continuityComparator) {
+        int len = Math.min(v1.size(), v2.size());
 
-        double min = CommonUtil.min(diff);
-        double max = CommonUtil.max(diff);
+        double[] diff = CommonUtil.featureDiff(v1, v2, comparator, len);
 
-        double[] nomove = CommonUtil.filter(diff, d -> d == 0.0);
+        int[] offsetDiffi = CommonUtil.offsetDiffi(v1, v2, comparator, len);
+        double[] offsetDiff = CommonUtil.i2d(offsetDiffi);
 
-        double nomoveVariance = CommonUtil.variance(nomove);
-        double nomoveMin = CommonUtil.min(nomove);
-        double nomoveMax = CommonUtil.max(nomove);
+        double[] continuity = CommonUtil.continuity(v2, continuityComparator, len);
 
-        double[] positive = CommonUtil.filter(diff, d -> d > 0.0);
+        double norm2 = CommonUtil.norm2(diff);
 
-        double positiveVariance = CommonUtil.variance(positive);
-//        double positiveMin = CommonUtil.min(positive);
-        double positiveMax = CommonUtil.max(positive);
+        double continuityNorm2 = CommonUtil.norm2(continuity);
 
-        double[] negative = CommonUtil.filter(diff, d -> d < 0.0);
+        double variance = CommonUtil.variance(offsetDiff);
 
-        double negativeVariance = CommonUtil.variance(negative);
-        double negativeMin = CommonUtil.min(negative);
-//        double negativeMax = CommonUtil.max(negative);
+//        TreeMap<Integer, List<Integer>> statistics = CommonUtil.groupby(offsetDiffi);
+//        int maxCount = statistics.values().stream().map(s -> s.size()).max(Comparator.naturalOrder()).get();
+//        int pos = statistics.entrySet().stream().filter(f -> { f.getValue().size() == maxCount}).findFirst().get();
 
-        return new double[]{variance, min, max, nomoveVariance, nomoveMin, nomoveMax, positiveVariance, positiveMax, negativeVariance, negativeMin};
+        return new double[]{norm2, variance, CommonUtil.min(offsetDiff), CommonUtil.max(offsetDiff), continuityNorm2};
     }
 }

@@ -26,6 +26,6 @@ public class CommonUtilTests {
 
         logger.info("v1 : {}", v1);
         logger.info("v2 : {}", v2);
-        logger.info("VARIANCE = {}", CommonUtil.variance(CommonUtil.offsetDiff(v1, v2, -1)));
+        logger.info("VARIANCE = {}", CommonUtil.variance(CommonUtil.offsetDiff(v1, v2, (e1, e2) -> e1.compareTo(e2), -1)));
     }
 }

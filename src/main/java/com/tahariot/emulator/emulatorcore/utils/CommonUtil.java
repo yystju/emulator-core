@@ -5,48 +5,37 @@ import org.apache.commons.lang3.ArrayUtils;
 import java.util.*;
 
 public class CommonUtil {
-    public static <T> double offsetVariance(List<T> v1, List<T> v2) {
-        return offsetVariance(v1, v2, -1);
-    }
-    public static <T> double offsetVariance(List<T> v1, List<T> v2, int len) {
-        return variance(offsetDiff(v1, v2, len));
-    }
-
-    public static <T> double[] positiveBiasDiff(List<T> v1, List<T> v2, int len) {
-        int range = Math.min(Math.max(v1.size(), v2.size()), (len >= 0 ? len : Integer.MAX_VALUE));
+    public static <T> double[] continuity(List<T> vec, Comparator<T> comparator, int len) {
+        int range = Math.min(vec.size(), (len >= 0 ? len : Integer.MAX_VALUE));
 
         double[] ret = new double[range];
 
         for(int i = 0; i < range; ++i) {
-            T e1 = (i < v1.size()) ? v1.get(i) : null;
+            T e1 = (i < vec.size()) ? vec.get(i) : null;
+            T e2 = (i < vec.size() - 1) ? vec.get(i + 1) : null;
 
-            int idxv1 = (i < v1.size()) ? i : -1;
-            int idxv2 = e1 != null ? v2.indexOf(e1) : -1;
-
-            ret[i] = (double)(idxv2 - idxv1 > 0 ? idxv2 - idxv1 : 0);
+            ret[i] = (e1 != null && e2 != null) && comparator.compare(e1, e2) > 0 ? 1.0d : 0.0d;
         }
 
         return ret;
     }
 
-    public static <T> double[] negativeBiasDiff(List<T> v1, List<T> v2, int len) {
+    public static <T> double[] featureDiff(List<T> v1, List<T> v2, Comparator<T> comparator, int len) {
         int range = Math.min(Math.max(v1.size(), v2.size()), (len >= 0 ? len : Integer.MAX_VALUE));
 
         double[] ret = new double[range];
 
         for(int i = 0; i < range; ++i) {
             T e1 = (i < v1.size()) ? v1.get(i) : null;
+            T e2 = (i < v1.size()) ? v2.get(i) : null;
 
-            int idxv1 = (i < v1.size()) ? i : -1;
-            int idxv2 = e1 != null ? v2.indexOf(e1) : -1;
-
-            ret[i] = (double)(idxv2 - idxv1 < 0 ? idxv2 - idxv1 : 0);
+            ret[i] = (double)(comparator.compare(e1, e2));
         }
 
         return ret;
     }
 
-    public static <T> double[] offsetDiff(List<T> v1, List<T> v2, int len) {
+    public static <T> double[] offsetDiff(List<T> v1, List<T> v2, Comparator<T> comparator, int len) {
         int range = Math.min(Math.max(v1.size(), v2.size()), (len >= 0 ? len : Integer.MAX_VALUE));
 
         double[] ret = new double[range];
@@ -55,7 +44,7 @@ public class CommonUtil {
             T e1 = (i < v1.size()) ? v1.get(i) : null;
 
             int idxv1 = (i < v1.size()) ? i : -1;
-            int idxv2 = e1 != null ? v2.indexOf(e1) : -1;
+            int idxv2 = e1 != null ? v2.indexOf(v2.stream().filter(e -> comparator.compare(e, e1) == 0).findFirst().get()) : -1;
 
             ret[i] = (double)(idxv2 - idxv1);
         }
@@ -63,7 +52,7 @@ public class CommonUtil {
         return ret;
     }
 
-    public static <T> int[] offsetDiffi(List<T> v1, List<T> v2, int len) {
+    public static <T> int[] offsetDiffi(List<T> v1, List<T> v2, Comparator<T> comparator, int len) {
         int range = Math.min(Math.max(v1.size(), v2.size()), (len >= 0 ? len : Integer.MAX_VALUE));
 
         int[] ret = new int[range];
@@ -72,7 +61,7 @@ public class CommonUtil {
             T e1 = (i < v1.size()) ? v1.get(i) : null;
 
             int idxv1 = (i < v1.size()) ? i : -1;
-            int idxv2 = e1 != null ? v2.indexOf(e1) : -1;
+            int idxv2 = e1 != null ? v2.indexOf(v2.stream().filter(e -> comparator.compare(e, e1) == 0).findFirst().get()) : -1;
 
             ret[i] = (idxv2 - idxv1);
         }
@@ -80,8 +69,8 @@ public class CommonUtil {
         return ret;
     }
 
-    public static Map<Integer, List<Integer>> groupby(int[] data) {
-        Map<Integer, List<Integer>> ret = new TreeMap<>();
+    public static TreeMap<Integer, List<Integer>> groupby(int[] data) {
+        TreeMap<Integer, List<Integer>> ret = new TreeMap<>();
 
         for(int i = 0; i< data.length; ++i) {
             List<Integer> list = null;
@@ -127,6 +116,18 @@ public class CommonUtil {
         return ret;
     }
 
+    public static double[] normalize(double[] data, double[] base) {
+        int range = Math.max(data.length, base.length);
+
+        double[] ret = new double[range];
+
+        for(int i = 0; i< range; ++i) {
+            ret[i] = ((i < data.length ? data[i] : 0.0) / (i < base.length ? base[i] : 1.0));
+        }
+
+        return ret;
+    }
+
     public static double max(double[] data) {
         double ret = 0.0f;
 
@@ -162,6 +163,7 @@ public class CommonUtil {
     public static interface Selector<T> {
         boolean select(T t);
     }
+
     public static double[] filter(double[] orig, Selector<Double> selector) {
         Object[] selected = Arrays.asList(ArrayUtils.toObject(orig)).stream().filter(d -> selector.select(d)).toArray();
 
@@ -171,6 +173,58 @@ public class CommonUtil {
             ret[i] = (Double)selected[i];
         }
 
+        return ret;
+    }
+
+    public static long gcd(long a, long b) {
+        long m = Math.max(a, b);
+        long n = Math.min(a, b);
+
+        while (m % n != 0) {
+            long tmp = m % n;
+            m = n;
+            n = tmp;
+        }
+
+        return n;
+    }
+
+    public static int gcd(int a, int b) {
+        int m = Math.max(a, b);
+        int n = Math.min(a, b);
+
+        while (m % n != 0) {
+            int tmp = m % n;
+            m = n;
+            n = tmp;
+        }
+
+        return n;
+    }
+
+    public static long lcm(long a, long b) {
+        return a * b / gcd(a, b);
+    }
+
+    public static int lcm(int a, int b) {
+        return a * b / gcd(a, b);
+    }
+
+    public static double norm2(double[] vec) {
+        double ret = 0.0d;
+
+        for(int i = 0; i < vec.length; ++i) {
+            ret += (vec[i] * vec[i]);
+        }
+
+        return Math.sqrt(ret);
+    }
+
+    public static double[] i2d(int[] arry) {
+        double[] ret = new double[arry.length];
+        for(int i = 0; i < arry.length; ++i) {
+            ret[i] = arry[i];
+        }
         return ret;
     }
 }

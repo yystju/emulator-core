@@ -12,6 +12,7 @@ public class AssemblyOnlinePlan {
 
     public AssemblyOnlinePlan(long seq, String VIN, String vehicleCode) {
         this.seq = seq;
+        this.priority = seq;
         this.VIN = VIN;
         this.vehicleCode = vehicleCode;
         this.status = "0";
@@ -28,6 +29,9 @@ public class AssemblyOnlinePlan {
 
     @JsonProperty("vc")
     private String vehicleCode;
+
+    @JsonProperty("prio")
+    private long priority;
 
     public long getSeq() {
         return seq;
@@ -59,6 +63,14 @@ public class AssemblyOnlinePlan {
 
     public void setVehicleCode(String vehicleCode) {
         this.vehicleCode = vehicleCode;
+    }
+
+    public long getPriority() {
+        return priority;
+    }
+
+    public void setPriority(long priority) {
+        this.priority = priority;
     }
 
     @Override
