@@ -50,11 +50,12 @@ public class EmulatorSimpleTests {
         Kernel kernel = (Kernel<Integer, Integer>) (takt, data, result, context) -> {
             int ret = 0;
 
-            Integer datium = data.get(coatingIndex.getAndIncrement());
+            Integer datium = coatingIndex.get() < data.size() ? data.get(coatingIndex.get()) : null;
 
-            if(pbsQueue.size() <= PBSCAP) {
+            if(datium != null&& pbsQueue.size() <= PBSCAP) {
                 result.info(datium, ret, String.format("PBS QUEUE BEFORE : %s", pbsQueue.toString()));
                 pbsQueue.add(datium);
+                coatingIndex.incrementAndGet();
                 result.info(datium, ret, String.format("PBS QUEUE IN : %d", ret));
                 result.info(datium, ret, String.format("PBS QUEUE AFTER : %s", pbsQueue.toString()));
 

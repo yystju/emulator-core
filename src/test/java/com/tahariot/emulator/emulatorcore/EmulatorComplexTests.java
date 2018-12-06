@@ -62,11 +62,12 @@ public class EmulatorComplexTests {
         Kernel kernel = (Kernel<CoatingOfflinePlan, CoatingOfflinePlan>) (takt, data, result, context) -> {
             CoatingOfflinePlan ret = null;
 
-            CoatingOfflinePlan datium = data.get((int) coatingIndex.getAndIncrement());
+            CoatingOfflinePlan datium = coatingIndex.get() < data.size() ? data.get((int)coatingIndex.get()) : null;
 
-            if(pbsQueue.size() <= PBSCAP) {
+            if(datium != null&& pbsQueue.size() <= PBSCAP) {
                 result.info(takt, ret, String.format("PBS QUEUE BEFORE : %s", pbsQueue.toString()));
                 pbsQueue.add(datium);
+                coatingIndex.incrementAndGet();
                 result.info(takt, ret, String.format("PBS QUEUE IN : %d", ret));
                 result.info(takt, ret, String.format("PBS QUEUE AFTER : %s", pbsQueue.toString()));
                 

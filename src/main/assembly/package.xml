@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<assembly xmlns="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.2"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.2 http://maven.apache.org/xsd/assembly-1.1.2.xsd">
+    <!--http://maven.apache.org/guides/mini/guide-assemblies.html-->
+    <id>bin</id>
+    <baseDirectory>${project.basedir}</baseDirectory>
+    <formats>
+        <format>zip</format>
+    </formats>
+    <fileSets>
+        <fileSet>
+            <directory>${project.build.directory}</directory>
+            <includes>
+                <include>${artifactId}*.jar</include>
+            </includes>
+            <outputDirectory>/target/</outputDirectory>
+        </fileSet>
+        <fileSet>
+            <directory>${project.basedir}</directory>
+            <includes>
+                <include>run.sh</include>
+                <include>cleanup.sh</include>
+                <include>run.cmd</include>
+                <include>/data/assembly.csv</include>
+                <include>/data/coating.csv</include>
+            </includes>
+            <outputDirectory>/</outputDirectory>
+        </fileSet>
+    </fileSets>
+</assembly>
