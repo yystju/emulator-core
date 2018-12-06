@@ -6,10 +6,10 @@ import com.tahariot.emulator.emulatorcore.api.*;
 import com.tahariot.emulator.emulatorcore.business.transactions.AssemblyOnlinePlan;
 import com.tahariot.emulator.emulatorcore.business.transactions.CoatingOfflinePlan;
 import com.tahariot.emulator.emulatorcore.emulators.SimpleEmulator;
+import com.tahariot.emulator.emulatorcore.evaluators.SimpleEvaluator;
 import com.tahariot.emulator.emulatorcore.rasterizers.EvenPossibilityShuffler;
 import com.tahariot.emulator.emulatorcore.rasterizers.VarianceConstraintedPossibilityShuffler;
 import com.tahariot.emulator.emulatorcore.utils.CommonUtil;
-import org.omg.CORBA.COMM_FAILURE;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,7 +21,6 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
-import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -39,7 +38,7 @@ public class EmulatorCoreApplication implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) throws Exception {
-        logger.info("[--Emulation--]");
+        logger.debug("[--Emulation--]");
 
         long start = System.currentTimeMillis();
 
@@ -84,7 +83,7 @@ public class EmulatorCoreApplication implements ApplicationRunner {
             windowWidth = Long.parseLong(args.getOptionValues("window.width").get(0));
         }
 
-        logger.info("PARAMETERS :: noshuffle({}), shuffleRatio({}), maxtakt({}), coatTakt({}), assemblyTakt({}), avg({}), cap({}), windowWidth({})", noshuffle, shuffleRatio, maxtakt, coatTakt, assemblyTakt, avg, cap, windowWidth);
+        logger.debug("PARAMETERS :: noshuffle({}), shuffleRatio({}), maxtakt({}), coatTakt({}), assemblyTakt({}), avg({}), cap({}), windowWidth({})", noshuffle, shuffleRatio, maxtakt, coatTakt, assemblyTakt, avg, cap, windowWidth);
 
         String category = "simple";
 
@@ -94,6 +93,8 @@ public class EmulatorCoreApplication implements ApplicationRunner {
         boolean finalNoshuffle = noshuffle;
         double finalShuffleRatio = shuffleRatio;
         long finalWindowWidth = windowWidth;
+
+        final SimpleEvaluator evaluator = new SimpleEvaluator();
 
         if(args.getNonOptionArgs().size() > 0) {
             File folder = new File(args.getNonOptionArgs().get(0));
@@ -113,7 +114,7 @@ public class EmulatorCoreApplication implements ApplicationRunner {
 
                     coatingPlanReader.close();
 
-                    logger.info("coatingOfflinePlan : {}", coatingOfflinePlan);
+                    logger.debug("coatingOfflinePlan : {}", coatingOfflinePlan);
 
                     CSVReader assemblyPlanReader = new CSVReader(new FileReader(assemblyPlanFile));
 
@@ -125,7 +126,7 @@ public class EmulatorCoreApplication implements ApplicationRunner {
 
                     coatingPlanReader.close();
 
-                    logger.info("assemblyOnlinePlan : {}", assemblyOnlinePlan);
+                    logger.debug("assemblyOnlinePlan : {}", assemblyOnlinePlan);
 
                     List<CoatingOfflinePlan> pbsQueue = new ArrayList<>();                              //PBS queue
                     List<AssemblyOnlinePlan> assemblyOnlineActual = new ArrayList<>();                  //总装上线实绩
@@ -139,14 +140,14 @@ public class EmulatorCoreApplication implements ApplicationRunner {
                     List<Long> assemblySpinList = new ArrayList<>();
 
                     Kernel kernel = (Kernel<CoatingOfflinePlan, CoatingOfflinePlan>) (takt, data, result, context) -> {
-                        logger.info("takt : {}", takt);
+                        logger.debug("takt : {}", takt);
 
                         CoatingOfflinePlan ret = null;
 
                         if(takt % finalCoatTakt == 0) {
                             CoatingOfflinePlan datium = (data.size() > coatingIndex.get()) ? data.get(coatingIndex.get()) : null;
 
-                            logger.info("datium : {}, coatingIndex : {}", datium, coatingIndex.toString());
+                            logger.debug("datium : {}, coatingIndex : {}", datium, coatingIndex.toString());
 
                             if (datium != null && pbsQueue.size() <= finalCap) {
                                 result.info(takt, ret, String.format("PBS QUEUE BEFORE : %s", pbsQueue.toString()));
@@ -157,9 +158,9 @@ public class EmulatorCoreApplication implements ApplicationRunner {
 
                                 ret = datium;
 
-                                logger.info("[QUEUE IN] ({}) : {}", pbsQueue.size(), datium.toString());
+                                logger.debug("[QUEUE IN] ({}) : {}", pbsQueue.size(), datium.toString());
                             } else {
-                                logger.info("[QUEUE IN SPIN] ({}) takt : {}", pbsQueue.size(), takt);
+                                logger.debug("[QUEUE IN SPIN] ({}) takt : {}", pbsQueue.size(), takt);
                                 coatingSpinList.add(takt);
                             }
                         }
@@ -174,13 +175,13 @@ public class EmulatorCoreApplication implements ApplicationRunner {
                                         .sorted((o1, o2) -> (o1.getSeq() < o2.getSeq() ? -1 : (o1.getSeq() > o2.getSeq() ? 1 : 0)))
                                         .collect(Collectors.toList());
 
-                                logger.info("plans : {}", plans.size());
+                                logger.debug("plans : {}", plans.size());
 
                                 for (int i = 0; i < plans.size(); ++i) {
                                     AssemblyOnlinePlan plan = plans.get(i);
 
                                     if (pbsQueue.stream().filter(p -> p.getVIN().equals(plan.getVIN())).count() > 0) {
-                                        logger.info("pbsQueue {} contains {}", pbsQueue, plan.getVIN());
+                                        logger.debug("pbsQueue {} contains {}", pbsQueue, plan.getVIN());
                                         choosenPlan = plan;
                                         break;
                                     } else {
@@ -189,7 +190,7 @@ public class EmulatorCoreApplication implements ApplicationRunner {
                                                 .filter(p -> p.getVehicleCode().equals(plan.getVehicleCode()) && pbsQueue.stream().filter(c -> c.getVIN().equals(p.getVIN())).count() > 0)
                                                 .findFirst().orElse(null);
 
-                                        logger.info("pbsQueue {} does not contain {}, choose the same VC code ({}) in pbsQueue. choosenPlan : {}.", pbsQueue, plan.getVIN(), plan.getVehicleCode(), choosenPlan);
+                                        logger.debug("pbsQueue {} does not contain {}, choose the same VC code ({}) in pbsQueue. choosenPlan : {}.", pbsQueue, plan.getVIN(), plan.getVehicleCode(), choosenPlan);
 
                                         if (choosenPlan != null) {
                                             break;
@@ -207,7 +208,7 @@ public class EmulatorCoreApplication implements ApplicationRunner {
 
                                 final AssemblyOnlinePlan finalChoosenPlan = choosenPlan;
 
-                                logger.info("finalChoosenPlan : {}", finalChoosenPlan);
+                                logger.debug("finalChoosenPlan : {}", finalChoosenPlan);
 
                                 if (finalChoosenPlan != null) {
                                     CoatingOfflinePlan cplan = pbsQueue.stream().filter(p -> p.getVIN().equals(finalChoosenPlan.getVIN())).findFirst().orElse(null);
@@ -220,40 +221,40 @@ public class EmulatorCoreApplication implements ApplicationRunner {
                                     finalChoosenPlan.setStatus("1");
                                     assemblyOnlineActual.add(finalChoosenPlan);
 
-                                    logger.info("[QUEUE OUT] ({}) : {}", pbsQueue.size(), finalChoosenPlan.toString());
+                                    logger.debug("[QUEUE OUT] ({}) : {}", pbsQueue.size(), finalChoosenPlan.toString());
                                 } else {
                                     assemblySpinList.add(takt);
-                                    logger.info("[QUEUE OUT SPIN] ({}) takt : {}", pbsQueue.size(), takt);
+                                    logger.debug("[QUEUE OUT SPIN] ({}) takt : {}", pbsQueue.size(), takt);
                                 }
                             } else {
                                 assemblySpinList.add(takt);
-                                logger.info("[QUEUE OUT SPIN] ({}) takt : {}", pbsQueue.size(), takt);
+                                logger.debug("[QUEUE OUT SPIN] ({}) takt : {}", pbsQueue.size(), takt);
                             }
                         }
 
                         return ret;
                     };
 
-                    logger.info("kernel : {}", kernel);
+                    logger.debug("kernel : {}", kernel);
 
                     Rasterizer<CoatingOfflinePlan> rasterizer = null;
 
                     if(finalNoshuffle) {
-                        logger.info("CHOSE NO SHUFFLE");
+                        logger.debug("CHOSE NO SHUFFLE");
                         rasterizer = (variables, context) -> {
                             ArrayList<CoatingOfflinePlan> ret = new ArrayList<>();
                             ret.addAll(coatingOfflinePlan);
                             return ret;
                         };
                     } else if (Math.abs(Double.MAX_VALUE - finalShuffleRatio) < 1e-5) {
-                        logger.info("CHOSE EvenPossibilityShuffler");
+                        logger.debug("CHOSE EvenPossibilityShuffler");
                         rasterizer = new EvenPossibilityShuffler<CoatingOfflinePlan>(finalWindowWidth, (variables, context) -> {
                             ArrayList<CoatingOfflinePlan> ret = new ArrayList<>();
                             ret.addAll(coatingOfflinePlan);
                             return ret;
                         });
                     } else {
-                        logger.info("CHOSE VarianceConstraintedPossibilityShuffler");
+                        logger.debug("CHOSE VarianceConstraintedPossibilityShuffler");
                         rasterizer = new VarianceConstraintedPossibilityShuffler<CoatingOfflinePlan>(finalWindowWidth, finalShuffleRatio, (variables, context) -> {
                             ArrayList<CoatingOfflinePlan> ret = new ArrayList<>();
                             ret.addAll(coatingOfflinePlan);
@@ -263,7 +264,7 @@ public class EmulatorCoreApplication implements ApplicationRunner {
 
                     Rasterizer<CoatingOfflinePlan> finalRasterizer = rasterizer;
 
-                    logger.info("finalRasterizer : {}", finalRasterizer);
+                    logger.debug("finalRasterizer : {}", finalRasterizer);
 
                     Input input = new Input<CoatingOfflinePlan, CoatingOfflinePlan>() {
                         @Override
@@ -277,21 +278,30 @@ public class EmulatorCoreApplication implements ApplicationRunner {
                         }
                     };
 
-                    logger.info("input : {}", input);
+                    logger.debug("input : {}", input);
 
                     Map<String, Object> variables = new HashMap<>();
 
                     variables.put(SimpleEmulator.VAR_EMULATOR_TAKT_MAX, finalMaxTakt);
 
-                    logger.info("variables : {}", variables);
+                    logger.debug("variables : {}", variables);
 
                     Emulator emulator = emulatorFactory.newInstance(category, kernel, variables);
 
-                    logger.info("emulator : {}", emulator);
+                    logger.debug("emulator : {}", emulator);
 
                     Map<String, Object> context = new HashMap<>();
 
                     Result<CoatingOfflinePlan, CoatingOfflinePlan> result = emulator.emulate(input, context);
+
+                    long end = System.currentTimeMillis();
+
+                    logger.debug("INTERVAL : {}", end - start);
+
+                    logger.info("================================================================================");
+                    logger.info("=====                               REPORT                                 =====");
+                    logger.info("--------------------------------------------------------------------------------");
+                    logger.info("PARAMETERS :: noshuffle({}), shuffleRatio({}), maxtakt({}), coatTakt({}), assemblyTakt({}), avg({}), cap({}), windowWidth({})", noshuffle, shuffleRatio, maxtakt, coatTakt, assemblyTakt, avg, cap, windowWidth);
 
                     logger.info("  pbsQueue residuals : {}", pbsQueue);
                     logger.info("  coatingOfflinePlan : {}", coatingOfflinePlan);
@@ -302,11 +312,20 @@ public class EmulatorCoreApplication implements ApplicationRunner {
                     int coatingLen = Math.min(coatingOfflinePlan.size(), result.data().size());
                     int assemblyLen = Math.min(assemblyOnlinePlan.size(), assemblyOnlineActual.size());
 
-                    logger.info("VARIANCE OF COATING OFFLINE(plan, actual) : {} (LEN : {})", CommonUtil.offsetVariance(coatingOfflinePlan, result.data(), coatingLen), coatingLen);
-                    logger.info("VARIANCE OF ASSEMBLY ONLINE(plan, actual) : {} (LEN : {})", CommonUtil.offsetVariance(assemblyOnlinePlan, assemblyOnlineActual, assemblyLen), assemblyLen);
+                    double[] coatingDiff = CommonUtil.offsetDiff(coatingOfflinePlan, result.data(), coatingLen);
+                    double[] assemblyDiff = CommonUtil.offsetDiff(assemblyOnlinePlan, assemblyOnlineActual, assemblyLen);
 
-                    logger.info(" COATING STATISTICS : {}", CommonUtil.statistics(CommonUtil.offsetDiffi(coatingOfflinePlan, result.data(), coatingLen)));
-                    logger.info("ASSEMBLY STATISTICS : {}", CommonUtil.statistics(CommonUtil.offsetDiffi(assemblyOnlinePlan, assemblyOnlineActual, assemblyLen)));
+                    double[] coatingEvaluationResult = evaluator.evaluate(coatingDiff);
+                    double[] assemblyEvaluationResult = evaluator.evaluate(assemblyDiff);
+
+                    logger.info("VARIANCE OF COATING OFFLINE(plan, actual) : {} (LEN : {})", CommonUtil.variance(coatingDiff), coatingLen);
+                    logger.info("VARIANCE OF ASSEMBLY ONLINE(plan, actual) : {} (LEN : {})", CommonUtil.variance(assemblyDiff), assemblyLen);
+
+                    logger.info(" COATING STATISTICS : {}", CommonUtil.count(CommonUtil.offsetDiffi(coatingOfflinePlan, result.data(), coatingLen)));
+                    logger.info("ASSEMBLY STATISTICS : {}", CommonUtil.count(CommonUtil.offsetDiffi(assemblyOnlinePlan, assemblyOnlineActual, assemblyLen)));
+
+                    logger.info("coatingEvaluationResult : {}", coatingEvaluationResult);
+                    logger.info("assemblyEvaluationResult : {}", assemblyEvaluationResult);
 
 //                    logger.info("COATING OFFLINE(plan, actual) POSITIVE BIAS : {}, NEGATIVE BIAS : {} (LEN : {})", CommonUtil.variance(CommonUtil.positiveBiasDiff(coatingOfflinePlan, result.data(), coatingLen)), CommonUtil.variance(CommonUtil.negativeBiasDiff(coatingOfflinePlan, result.data(), coatingLen)), coatingLen);
 //                    logger.info("ASSEMBLY ONLINE(plan, actual) POSITIVE BIAS : {}, NEGATIVE BIAS : {} (LEN : {})", CommonUtil.variance(CommonUtil.positiveBiasDiff(assemblyOnlinePlan, assemblyOnlineActual, assemblyLen)), CommonUtil.variance(CommonUtil.negativeBiasDiff(assemblyOnlinePlan, assemblyOnlineActual, assemblyLen)), assemblyLen);
@@ -315,9 +334,7 @@ public class EmulatorCoreApplication implements ApplicationRunner {
 //                        logger.info("\t({}) {}", h.level(), h.toString());
 //                    }
 
-                    long end = System.currentTimeMillis();
-
-                    logger.info("INTERVAL : {}", end - start);
+                    logger.info("--------------------------------------------------------------------------------");
 
                     final CSVWriter awriter = new CSVWriter(new FileWriter("./actual_assembly.csv"));
 

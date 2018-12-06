@@ -1,9 +1,8 @@
 package com.tahariot.emulator.emulatorcore.utils;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
+import org.apache.commons.lang3.ArrayUtils;
+
+import java.util.*;
 
 public class CommonUtil {
     public static <T> double offsetVariance(List<T> v1, List<T> v2) {
@@ -81,7 +80,26 @@ public class CommonUtil {
         return ret;
     }
 
-    public static Map<Integer, Integer> statistics(int[] data) {
+    public static Map<Integer, List<Integer>> groupby(int[] data) {
+        Map<Integer, List<Integer>> ret = new TreeMap<>();
+
+        for(int i = 0; i< data.length; ++i) {
+            List<Integer> list = null;
+
+            if(ret.containsKey(data[i])) {
+                list = ret.get(data[i]);
+            } else {
+                list = new ArrayList<>();
+                ret.put(data[i], list);
+            }
+
+            list.add(i);
+        }
+
+        return ret;
+    }
+
+    public static Map<Integer, Integer> count(int[] data) {
         Map<Integer, Integer> ret = new TreeMap<>();
 
         for(int i = 0; i< data.length; ++i) {
@@ -92,6 +110,30 @@ public class CommonUtil {
             }
 
             ret.put(data[i], ++cnt);
+        }
+
+        return ret;
+    }
+
+    public static double min(double[] data) {
+        double ret = 0.0f;
+
+        for(int i = 0; i< data.length; ++i) {
+            if(ret > data[i]) {
+                ret = data[i];
+            }
+        }
+
+        return ret;
+    }
+
+    public static double max(double[] data) {
+        double ret = 0.0f;
+
+        for(int i = 0; i< data.length; ++i) {
+            if(ret < data[i]) {
+                ret = data[i];
+            }
         }
 
         return ret;
@@ -115,5 +157,20 @@ public class CommonUtil {
         }
 
         return (s / (vec.length - 1));
+    }
+
+    public static interface Selector<T> {
+        boolean select(T t);
+    }
+    public static double[] filter(double[] orig, Selector<Double> selector) {
+        Object[] selected = Arrays.asList(ArrayUtils.toObject(orig)).stream().filter(d -> selector.select(d)).toArray();
+
+        double[] ret = new double[selected.length];
+
+        for(int i = 0; i < selected.length; ++i) {
+            ret[i] = (Double)selected[i];
+        }
+
+        return ret;
     }
 }

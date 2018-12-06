@@ -58,9 +58,9 @@ public class VarianceConstraintedPossibilityShuffler<T> extends AbstractShuffler
 
             ratio = transformer.transform(ret);
 
-            logger.info("orig ({}) : {}", orig.size(), orig);
-            logger.info("ret ({}) : {}", ret.size(), ret);
-            logger.info("ratio : {}, shuffleRatio : {}", ratio, this.shuffleRatio);
+            logger.debug("orig ({}) : {}", orig.size(), orig);
+            logger.debug("ret ({}) : {}", ret.size(), ret);
+            logger.debug("ratio : {}, shuffleRatio : {}", ratio, this.shuffleRatio);
 
             --maxTimes;
 
